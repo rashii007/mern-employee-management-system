@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api/employee", // ✅ Fixed: employees (plural)
+  baseURL: `${import.meta.env.VITE_API_URL}/employee`,
   withCredentials: true,
 });
 
@@ -115,9 +115,7 @@ export const getEmployeesByDepartment = async (deptId) => {
 // ✅ Get all departments (admin only)
 export const getDepartments = async () => {
   try {
-    const res = await axios.get("http://localhost:5000/api/departments/get", {
-      withCredentials: true,
-    });
+    const res = await departmentApi.get("/get");
     return res.data;
   } catch (error) {
     console.error("Get Departments Error:", error);
@@ -128,12 +126,7 @@ export const getDepartments = async () => {
 // ✅ Get department by ID (admin only)
 export const getDepartmentById = async (id) => {
   try {
-    const res = await axios.get(
-      `http://localhost:5000/api/departments/get/${id}`,
-      {
-        withCredentials: true,
-      },
-    );
+    const res = await departmentApi.get(`/get/${id}`);
     return res.data;
   } catch (error) {
     console.error("Get Department By ID Error:", error);
@@ -144,13 +137,7 @@ export const getDepartmentById = async (id) => {
 // ✅ Create department (admin only)
 export const createDepartment = async (data) => {
   try {
-    const res = await axios.post(
-      "http://localhost:5000/api/departments/create",
-      data,
-      {
-        withCredentials: true,
-      },
-    );
+    const res = await departmentApi.post("/create", data);
     return res.data;
   } catch (error) {
     console.error("Create Department Error:", error);
@@ -161,13 +148,7 @@ export const createDepartment = async (data) => {
 // ✅ Update department (admin only)
 export const updateDepartment = async (id, data) => {
   try {
-    const res = await axios.put(
-      `http://localhost:5000/api/departments/update/${id}`,
-      data,
-      {
-        withCredentials: true,
-      },
-    );
+    const res = await departmentApi.put(`/update/${id}`, data);
     return res.data;
   } catch (error) {
     console.error("Update Department Error:", error);
@@ -194,31 +175,26 @@ export const deleteDepartment = async (id) => {
 // ✅ Get department stats (admin only)
 export const getDepartmentStats = async () => {
   try {
-    const res = await axios.get("http://localhost:5000/api/departments/stats", {
-      withCredentials: true,
-    });
+    const res = await departmentApi.get("/stats");
     return res.data;
   } catch (error) {
     console.error("Get Department Stats Error:", error);
     throw error.response?.data || error.message;
-  }
-};
+    };
+    return res.data;
+  } 
 
 // ✅ Get department employees (admin only)
 export const getDepartmentEmployees = async (id) => {
   try {
-    const res = await axios.get(
-      `http://localhost:5000/api/departments/${id}/employees`,
-      {
-        withCredentials: true,
-      },
-    );
+    const res = await departmentApi.get(`/employees/${id}`);
     return res.data;
   } catch (error) {
     console.error("Get Department Employees Error:", error);
     throw error.response?.data || error.message;
   }
 };
+
 
 // ============================================
 // EXPORT ALL

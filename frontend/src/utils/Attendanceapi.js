@@ -1,8 +1,9 @@
 import axios from "axios";
 
+
 const API = axios.create({
-  baseURL: "http://localhost:5000/api/attendance",
-  withCredentials: true, // if using HTTP-only JWT cookies
+  baseURL: `${import.meta.env.VITE_API_URL}/attendance`,
+  withCredentials: true,
 });
 
 // Employee

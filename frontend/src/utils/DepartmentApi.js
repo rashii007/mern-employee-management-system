@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const departmentApi = axios.create({
-  baseURL: "http://localhost:5000/api/department",
+  baseURL: `${import.meta.env.VITE_API_URL}/department`,
   withCredentials: true,
 });
 

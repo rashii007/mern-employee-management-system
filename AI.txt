@@ -1,0 +1,17 @@
+For UI 
+   |
+Figma AI
+Locofy
+Loveable
+v0
+
+For Coding
+    |
+Cluade AI
+Cursor AI
+Github Copilet
+Chatgpt
+DeepSeek
+
+For Production 
+Replit agent

@@ -5,8 +5,8 @@ const generateToken = require("../utils/generateToken");
 // Use SameSite=None for cross-origin frontend requests and Secure for modern browsers.
 const cookieOptions = {
   httpOnly: true,
-  sameSite: "none",
-  secure: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 };
 
 // @route  POST /api/auth/register
@@ -49,7 +49,7 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res
         .status(400)

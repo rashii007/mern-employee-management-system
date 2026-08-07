@@ -40,6 +40,8 @@ export default function AdminAttendance() {
 
     try {
       const { data } = await getAllAttendanceApi(date);
+      console.log("Attendance Response:", data);
+
       setRecords(data.records || data);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load attendance");

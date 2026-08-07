@@ -29,17 +29,78 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Clear field error when user starts typing
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors({ ...fieldErrors, [e.target.name]: "" });
+    }
+  };
+
+  const validateForm = () => {
+    const errors = { name: "", email: "", password: "", confirmPassword: "" };
+    let isValid = true;
+
+    // Validate Name
+    if (!formData.name.trim()) {
+      errors.name = "Full name is required";
+      isValid = false;
+    } else if (formData.name.trim().length < 2) {
+      errors.name = "Name must be at least 2 characters";
+      isValid = false;
+    }
+
+    // Validate Email
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = "Please enter a valid email address";
+      isValid = false;
+    }
+
+    // Validate Password
+    if (!formData.password) {
+      errors.password = "Password is required";
+      isValid = false;
+    } else if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+      isValid = false;
+    } else if (!/(?=.*[A-Z])/.test(formData.password)) {
+      errors.password = "Password must contain at least one uppercase letter";
+      isValid = false;
+    } else if (!/(?=.*[0-9])/.test(formData.password)) {
+      errors.password = "Password must contain at least one number";
+      isValid = false;
+    }
+
+    // Validate Confirm Password
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = "Please confirm your password";
+      isValid = false;
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
+      isValid = false;
+    }
+
+    setFieldErrors(errors);
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({ name: "", email: "", password: "", confirmPassword: "" });
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+    // Validate form before submission
+    if (!validateForm()) {
       return;
     }
 
@@ -49,9 +110,18 @@ const Register = () => {
       setUser(normalizeAuthUser(user));
       navigate("/");
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Registration failed. Please try again.",
-      );
+      const errorMessage =
+        err.response?.data?.message || "Registration failed. Please try again.";
+      setError(errorMessage);
+
+      // Set field-specific errors based on API response
+      if (errorMessage.toLowerCase().includes("email")) {
+        setFieldErrors((prev) => ({ ...prev, email: errorMessage }));
+      } else if (errorMessage.toLowerCase().includes("name")) {
+        setFieldErrors((prev) => ({ ...prev, name: errorMessage }));
+      } else if (errorMessage.toLowerCase().includes("password")) {
+        setFieldErrors((prev) => ({ ...prev, password: errorMessage }));
+      }
     } finally {
       setLoading(false);
     }
@@ -177,22 +247,33 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Error */}
-          {error && (
-            <div className="mb-6 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
-              <span>⚠️</span>
-              <span>{error}</span>
-            </div>
-          )}
+          {/* General Error */}
+          {error &&
+            !fieldErrors.name &&
+            !fieldErrors.email &&
+            !fieldErrors.password &&
+            !fieldErrors.confirmPassword && (
+              <div className="mb-6 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{error}</span>
+              </div>
+            )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name Field */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Full Name
               </label>
               <div className="relative group">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white transition-colors duration-200" />
+                <User
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-200 ${
+                    fieldErrors.name
+                      ? "text-red-500"
+                      : "text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white"
+                  }`}
+                />
                 <input
                   type="text"
                   name="name"
@@ -200,17 +281,34 @@ const Register = () => {
                   onChange={handleChange}
                   required
                   placeholder="John Doe"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500 transition-all duration-300"
+                  className={`w-full pl-10 pr-4 py-3 rounded-xl border-2 transition-all duration-300 ${
+                    fieldErrors.name
+                      ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
+                      : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
+                  } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
                 />
               </div>
+              {fieldErrors.name && (
+                <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
+                  <span className="text-xs">⚠️</span>
+                  {fieldErrors.name}
+                </p>
+              )}
             </div>
 
+            {/* Email Field */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Email Address
               </label>
               <div className="relative group">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white transition-colors duration-200" />
+                <Mail
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-200 ${
+                    fieldErrors.email
+                      ? "text-red-500"
+                      : "text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white"
+                  }`}
+                />
                 <input
                   type="email"
                   name="email"
@@ -218,17 +316,34 @@ const Register = () => {
                   onChange={handleChange}
                   required
                   placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500 transition-all duration-300"
+                  className={`w-full pl-10 pr-4 py-3 rounded-xl border-2 transition-all duration-300 ${
+                    fieldErrors.email
+                      ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
+                      : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
+                  } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
+                  <span className="text-xs">⚠️</span>
+                  {fieldErrors.email}
+                </p>
+              )}
             </div>
 
+            {/* Password Field */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Password
               </label>
               <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white transition-colors duration-200" />
+                <Lock
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-200 ${
+                    fieldErrors.password
+                      ? "text-red-500"
+                      : "text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white"
+                  }`}
+                />
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
@@ -236,7 +351,11 @@ const Register = () => {
                   onChange={handleChange}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-12 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500 transition-all duration-300"
+                  className={`w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-300 ${
+                    fieldErrors.password
+                      ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
+                      : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
+                  } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
                 />
                 <button
                   type="button"
@@ -250,14 +369,50 @@ const Register = () => {
                   )}
                 </button>
               </div>
+              {fieldErrors.password && (
+                <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
+                  <span className="text-xs">⚠️</span>
+                  {fieldErrors.password}
+                </p>
+              )}
+              {/* Password strength indicator */}
+              {formData.password && !fieldErrors.password && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        formData.password.length >= 8
+                          ? "bg-green-500 w-full"
+                          : formData.password.length >= 6
+                            ? "bg-yellow-500 w-2/3"
+                            : "bg-red-500 w-1/3"
+                      }`}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {formData.password.length >= 8
+                      ? "Strong"
+                      : formData.password.length >= 6
+                        ? "Medium"
+                        : "Weak"}
+                  </span>
+                </div>
+              )}
             </div>
 
+            {/* Confirm Password Field */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Confirm Password
               </label>
               <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white transition-colors duration-200" />
+                <Lock
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-200 ${
+                    fieldErrors.confirmPassword
+                      ? "text-red-500"
+                      : "text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white"
+                  }`}
+                />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
@@ -265,7 +420,11 @@ const Register = () => {
                   onChange={handleChange}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-12 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500 transition-all duration-300"
+                  className={`w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-300 ${
+                    fieldErrors.confirmPassword
+                      ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
+                      : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
+                  } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
                 />
                 <button
                   type="button"
@@ -279,6 +438,21 @@ const Register = () => {
                   )}
                 </button>
               </div>
+              {fieldErrors.confirmPassword && (
+                <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
+                  <span className="text-xs">⚠️</span>
+                  {fieldErrors.confirmPassword}
+                </p>
+              )}
+              {/* Match indicator */}
+              {formData.confirmPassword &&
+                formData.password &&
+                !fieldErrors.confirmPassword && (
+                  <p className="mt-1.5 text-sm text-green-500 dark:text-green-400 flex items-center gap-1.5">
+                    <span className="text-xs">✓</span>
+                    Passwords match
+                  </p>
+                )}
             </div>
 
             <button

@@ -22,23 +22,69 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({ email: "", password: "" });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Clear field error when user starts typing
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors({ ...fieldErrors, [e.target.name]: "" });
+    }
+  };
+
+  const validateForm = () => {
+    const errors = { email: "", password: "" };
+    let isValid = true;
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+      isValid = false;
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = "Please enter a valid email address";
+      isValid = false;
+    }
+
+    if (!formData.password) {
+      errors.password = "Password is required";
+      isValid = false;
+    } else if (formData.password.length < 6) {
+      errors.password = "Password must be at least 6 characters";
+      isValid = false;
+    }
+
+    setFieldErrors(errors);
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({ email: "", password: "" });
+
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
     try {
       const user = await loginUser(formData);
       setUser(normalizeAuthUser(user));
       navigate("/");
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Login failed. Please try again.",
-      );
+      const errorMessage =
+        err.response?.data?.message || "Login failed. Please try again.";
+      setError(errorMessage);
+
+      // Set field-specific errors based on API response
+      if (
+        errorMessage.toLowerCase().includes("email") ||
+        errorMessage.toLowerCase().includes("user")
+      ) {
+        setFieldErrors((prev) => ({ ...prev, email: errorMessage }));
+      } else if (errorMessage.toLowerCase().includes("password")) {
+        setFieldErrors((prev) => ({ ...prev, password: errorMessage }));
+      }
     } finally {
       setLoading(false);
     }
@@ -164,8 +210,8 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Error */}
-          {error && (
+          {/* General Error */}
+          {error && !fieldErrors.email && !fieldErrors.password && (
             <div className="mb-6 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
               <span>⚠️</span>
               <span>{error}</span>
@@ -179,7 +225,13 @@ const Login = () => {
                 Email Address
               </label>
               <div className="relative group">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white transition-colors duration-200" />
+                <Mail
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-200 ${
+                    fieldErrors.email
+                      ? "text-red-500"
+                      : "text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white"
+                  }`}
+                />
                 <input
                   type="email"
                   name="email"
@@ -187,9 +239,20 @@ const Login = () => {
                   onChange={handleChange}
                   required
                   placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500 transition-all duration-300"
+                  className={`w-full pl-10 pr-4 py-3 rounded-xl border-2 transition-all duration-300 ${
+                    fieldErrors.email
+                      ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
+                      : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
+                  } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
                 />
               </div>
+              {/* Email Error Message */}
+              {fieldErrors.email && (
+                <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
+                  <span className="text-xs">⚠️</span>
+                  {fieldErrors.email}
+                </p>
+              )}
             </div>
 
             <div>
@@ -205,7 +268,13 @@ const Login = () => {
                 </Link>
               </div>
               <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white transition-colors duration-200" />
+                <Lock
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-200 ${
+                    fieldErrors.password
+                      ? "text-red-500"
+                      : "text-gray-400 dark:text-gray-500 group-focus-within:text-gray-900 dark:group-focus-within:text-white"
+                  }`}
+                />
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
@@ -213,7 +282,11 @@ const Login = () => {
                   onChange={handleChange}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-12 py-3 rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500 transition-all duration-300"
+                  className={`w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-300 ${
+                    fieldErrors.password
+                      ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
+                      : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
+                  } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
                 />
                 <button
                   type="button"
@@ -227,6 +300,13 @@ const Login = () => {
                   )}
                 </button>
               </div>
+              {/* Password Error Message */}
+              {fieldErrors.password && (
+                <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
+                  <span className="text-xs">⚠️</span>
+                  {fieldErrors.password}
+                </p>
+              )}
             </div>
 
             <button

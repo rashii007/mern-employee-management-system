@@ -22,7 +22,7 @@ export const logoutUser = async () => {
 };
 
 export const getCurrentUser = async () => {
-  const res = await api.get("/auth/me", { withCredentials: true });
+  const res = await api.get("/auth/me");
 
   return res.data;
 };

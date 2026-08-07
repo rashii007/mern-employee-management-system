@@ -146,7 +146,7 @@ const Register = () => {
     try {
       const user = await registerUser(formData);
       setUser(normalizeAuthUser(user));
-      navigate("/");
+      navigate("/login");
     } catch (err) {
       const errorMessage =
         err.response?.data?.message || "Registration failed. Please try again.";

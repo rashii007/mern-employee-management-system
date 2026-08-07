@@ -67,6 +67,7 @@ const loginUser = async (req, res) => {
       ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+    console.log('token' , token)
 
     res.status(200).json({
       _id: user._id,

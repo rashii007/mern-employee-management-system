@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Mail,
@@ -35,12 +35,50 @@ const Register = () => {
     password: "",
     confirmPassword: "",
   });
+  const [touched, setTouched] = useState({
+    name: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+  });
+
+  // Real-time validation for confirm password
+  useEffect(() => {
+    if (touched.confirmPassword && formData.confirmPassword) {
+      if (formData.password !== formData.confirmPassword) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          confirmPassword: "Passwords do not match",
+        }));
+      } else {
+        setFieldErrors((prev) => ({
+          ...prev,
+          confirmPassword: "",
+        }));
+      }
+    }
+  }, [formData.password, formData.confirmPassword, touched.confirmPassword]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Clear field error when user starts typing
-    if (fieldErrors[e.target.name]) {
+    // Clear field error when user starts typing (except confirm password which is handled by useEffect)
+    if (e.target.name !== "confirmPassword" && fieldErrors[e.target.name]) {
       setFieldErrors({ ...fieldErrors, [e.target.name]: "" });
+    }
+  };
+
+  const handleBlur = (e) => {
+    setTouched({ ...touched, [e.target.name]: true });
+
+    // Validate on blur
+    const { name, value } = e.target;
+    if (name === "confirmPassword" && value) {
+      if (formData.password !== value) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          confirmPassword: "Passwords do not match",
+        }));
+      }
     }
   };
 
@@ -73,12 +111,6 @@ const Register = () => {
     } else if (formData.password.length < 6) {
       errors.password = "Password must be at least 6 characters";
       isValid = false;
-    } else if (!/(?=.*[A-Z])/.test(formData.password)) {
-      errors.password = "Password must contain at least one uppercase letter";
-      isValid = false;
-    } else if (!/(?=.*[0-9])/.test(formData.password)) {
-      errors.password = "Password must contain at least one number";
-      isValid = false;
     }
 
     // Validate Confirm Password
@@ -91,6 +123,12 @@ const Register = () => {
     }
 
     setFieldErrors(errors);
+    setTouched({
+      name: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+    });
     return isValid;
   };
 
@@ -132,30 +170,26 @@ const Register = () => {
       {/* Theme Button */}
       <ThemeButton />
 
-      {/* Animated Background */}
+      {/* Animated Background - same as before */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gray-200/30 dark:bg-gray-700/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gray-200/30 dark:bg-gray-700/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gray-200/20 dark:bg-gray-700/5 rounded-full blur-3xl animate-pulse delay-500"></div>
-
-        {/* Floating Orbs */}
         <div className="absolute top-20 right-20 w-4 h-4 bg-gray-400/30 dark:bg-gray-500/20 rounded-full blur-xl animate-bounce"></div>
         <div className="absolute bottom-32 left-20 w-6 h-6 bg-gray-400/20 dark:bg-gray-500/20 rounded-full blur-xl animate-bounce delay-700"></div>
         <div className="absolute top-1/2 right-10 w-3 h-3 bg-gray-400/20 dark:bg-gray-500/20 rounded-full blur-xl animate-bounce delay-300"></div>
       </div>
 
-      {/* Main Container - Split Layout */}
+      {/* Main Container */}
       <div className="relative w-full max-w-5xl grid lg:grid-cols-2 gap-0 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-gray-200/50 dark:border-slate-800/50 overflow-hidden">
         {/* Left Side - Brand Section */}
         <div className="hidden lg:flex flex-col justify-between p-10 bg-gray-900 dark:bg-slate-950 text-white relative overflow-hidden min-h-[550px]">
-          {/* Background Pattern */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/20 rounded-full blur-3xl"></div>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
           </div>
 
-          {/* Content */}
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-12">
               <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg">
@@ -196,7 +230,6 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Footer */}
           <div className="relative z-10">
             <div className="flex items-center gap-4 text-xs text-white/60">
               <span className="flex items-center gap-1">🔒 Secure</span>
@@ -207,7 +240,6 @@ const Register = () => {
             </div>
           </div>
 
-          {/* Decorative Shape */}
           <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-white/5 rounded-full"></div>
           <div className="absolute -top-20 -left-20 w-48 h-48 bg-white/5 rounded-full"></div>
         </div>
@@ -279,16 +311,17 @@ const Register = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
                   placeholder="John Doe"
                   className={`w-full pl-10 pr-4 py-3 rounded-xl border-2 transition-all duration-300 ${
-                    fieldErrors.name
+                    fieldErrors.name && touched.name
                       ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
                       : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
                   } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
                 />
               </div>
-              {fieldErrors.name && (
+              {fieldErrors.name && touched.name && (
                 <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
                   <span className="text-xs">⚠️</span>
                   {fieldErrors.name}
@@ -314,16 +347,17 @@ const Register = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
                   placeholder="you@example.com"
                   className={`w-full pl-10 pr-4 py-3 rounded-xl border-2 transition-all duration-300 ${
-                    fieldErrors.email
+                    fieldErrors.email && touched.email
                       ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
                       : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
                   } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
                 />
               </div>
-              {fieldErrors.email && (
+              {fieldErrors.email && touched.email && (
                 <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
                   <span className="text-xs">⚠️</span>
                   {fieldErrors.email}
@@ -349,10 +383,11 @@ const Register = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
                   placeholder="••••••••"
                   className={`w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-300 ${
-                    fieldErrors.password
+                    fieldErrors.password && touched.password
                       ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
                       : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
                   } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
@@ -369,34 +404,11 @@ const Register = () => {
                   )}
                 </button>
               </div>
-              {fieldErrors.password && (
+              {fieldErrors.password && touched.password && (
                 <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
                   <span className="text-xs">⚠️</span>
                   {fieldErrors.password}
                 </p>
-              )}
-              {/* Password strength indicator */}
-              {formData.password && !fieldErrors.password && (
-                <div className="mt-2 flex items-center gap-2">
-                  <div className="flex-1 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-300 ${
-                        formData.password.length >= 8
-                          ? "bg-green-500 w-full"
-                          : formData.password.length >= 6
-                            ? "bg-yellow-500 w-2/3"
-                            : "bg-red-500 w-1/3"
-                      }`}
-                    />
-                  </div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {formData.password.length >= 8
-                      ? "Strong"
-                      : formData.password.length >= 6
-                        ? "Medium"
-                        : "Weak"}
-                  </span>
-                </div>
               )}
             </div>
 
@@ -418,12 +430,17 @@ const Register = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
                   placeholder="••••••••"
                   className={`w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-300 ${
-                    fieldErrors.confirmPassword
+                    fieldErrors.confirmPassword && touched.confirmPassword
                       ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
-                      : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
+                      : formData.confirmPassword &&
+                          formData.password === formData.confirmPassword &&
+                          touched.confirmPassword
+                        ? "border-green-500 bg-green-50 dark:bg-green-900/20 focus:ring-green-300 dark:focus:ring-green-600"
+                        : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
                   } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
                 />
                 <button
@@ -438,16 +455,19 @@ const Register = () => {
                   )}
                 </button>
               </div>
-              {fieldErrors.confirmPassword && (
+
+              {/* Error message for confirm password */}
+              {fieldErrors.confirmPassword && touched.confirmPassword && (
                 <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
                   <span className="text-xs">⚠️</span>
                   {fieldErrors.confirmPassword}
                 </p>
               )}
-              {/* Match indicator */}
+
+              {/* Success message when passwords match */}
               {formData.confirmPassword &&
-                formData.password &&
-                !fieldErrors.confirmPassword && (
+                formData.password === formData.confirmPassword &&
+                touched.confirmPassword && (
                   <p className="mt-1.5 text-sm text-green-500 dark:text-green-400 flex items-center gap-1.5">
                     <span className="text-xs">✓</span>
                     Passwords match

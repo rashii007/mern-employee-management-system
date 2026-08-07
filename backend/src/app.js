@@ -12,9 +12,7 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://mern-employee-management-system-zeta.vercel.app",
-  "https://mern-employee-management-system-7l0qfz0cx.vercel.app",
-  "https://mern-employee-management-system-7ks0s5o6n.vercel.app", // Current Vercel URL
+  "https://mern-employee-management-system-7ks0s5o6n.vercel.app",
 ];
 
 app.use(

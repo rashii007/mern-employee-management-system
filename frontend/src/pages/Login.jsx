@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Mail,
@@ -23,6 +23,122 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({ email: "", password: "" });
+  const [touched, setTouched] = useState({ email: false, password: false });
+
+  // Strong email validation function (same as Register)
+  const validateEmail = (email) => {
+    if (!email || email.trim() === "") {
+      return "Email is required";
+    }
+
+    // Remove leading/trailing spaces
+    email = email.trim();
+
+    // Check for spaces in email
+    if (email.includes(" ")) {
+      return "Email cannot contain spaces";
+    }
+
+    // Check for consecutive dots
+    if (email.includes("..")) {
+      return "Email cannot contain consecutive dots";
+    }
+
+    // Check for @ symbol - must have exactly one @
+    const atCount = (email.match(/@/g) || []).length;
+    if (atCount !== 1) {
+      return "Email must contain exactly one @ symbol";
+    }
+
+    // Split email into local and domain parts
+    const [localPart, domain] = email.split("@");
+
+    // Validate local part (before @)
+    if (!localPart || localPart.length === 0) {
+      return "Email must have a username before @";
+    }
+
+    if (localPart.length > 64) {
+      return "Email username is too long (max 64 characters)";
+    }
+
+    // Local part cannot start or end with a dot
+    if (localPart.startsWith(".") || localPart.endsWith(".")) {
+      return "Email username cannot start or end with a dot";
+    }
+
+    // Local part can only contain letters, numbers, dots, underscores, hyphens, and plus
+    if (!/^[a-zA-Z0-9._%+-]+$/.test(localPart)) {
+      return "Email contains invalid characters";
+    }
+
+    // Validate domain part (after @)
+    if (!domain || domain.length === 0) {
+      return "Email must have a domain after @";
+    }
+
+    // Check for invalid domain patterns
+    if (domain.startsWith(".") || domain.endsWith(".")) {
+      return "Domain cannot start or end with a dot";
+    }
+
+    // Check for domain parts with no dots
+    if (!domain.includes(".")) {
+      return "Email must have a valid domain extension (e.g., .com, .org)";
+    }
+
+    // Check domain parts
+    const domainParts = domain.split(".");
+
+    // Each part must have at least 2 characters and only valid characters
+    for (const part of domainParts) {
+      if (part.length < 2) {
+        return "Domain parts must have at least 2 characters";
+      }
+      if (!/^[a-zA-Z0-9-]+$/.test(part)) {
+        return "Domain contains invalid characters";
+      }
+    }
+
+    // Top-level domain (last part) must be at least 2 characters and only letters
+    const tld = domainParts[domainParts.length - 1];
+    if (tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) {
+      return "Invalid domain extension";
+    }
+
+    // Check for invalid characters in domain
+    if (!/^[a-zA-Z0-9.-]+$/.test(domain)) {
+      return "Domain contains invalid characters";
+    }
+
+    return null; // No error - email is valid
+  };
+
+  // Real-time validation for email
+  useEffect(() => {
+    if (touched.email && formData.email) {
+      const emailError = validateEmail(formData.email);
+      if (emailError) {
+        setFieldErrors((prev) => ({ ...prev, email: emailError }));
+      } else {
+        setFieldErrors((prev) => ({ ...prev, email: "" }));
+      }
+    }
+  }, [formData.email, touched.email]);
+
+  // Real-time validation for password
+  useEffect(() => {
+    if (touched.password && formData.password) {
+      if (formData.password.length < 6) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          password: "Password must be at least 6 characters",
+        }));
+      } else {
+        setFieldErrors((prev) => ({ ...prev, password: "" }));
+      }
+    }
+  }, [formData.password, touched.password]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,18 +148,39 @@ const Login = () => {
     }
   };
 
+  const handleBlur = (e) => {
+    setTouched({ ...touched, [e.target.name]: true });
+
+    // Validate on blur
+    const { name, value } = e.target;
+    if (name === "email" && value) {
+      const emailError = validateEmail(value);
+      if (emailError) {
+        setFieldErrors((prev) => ({ ...prev, email: emailError }));
+      }
+    }
+    if (name === "password" && value) {
+      if (value.length < 6) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          password: "Password must be at least 6 characters",
+        }));
+      }
+    }
+  };
+
   const validateForm = () => {
     const errors = { email: "", password: "" };
     let isValid = true;
 
-    if (!formData.email.trim()) {
-      errors.email = "Email is required";
-      isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = "Please enter a valid email address";
+    // Validate Email with strong validation
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      errors.email = emailError;
       isValid = false;
     }
 
+    // Validate Password
     if (!formData.password) {
       errors.password = "Password is required";
       isValid = false;
@@ -53,6 +190,7 @@ const Login = () => {
     }
 
     setFieldErrors(errors);
+    setTouched({ email: true, password: true });
     return isValid;
   };
 
@@ -220,6 +358,7 @@ const Login = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email Field */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Email Address
@@ -237,24 +376,41 @@ const Login = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
                   placeholder="you@example.com"
                   className={`w-full pl-10 pr-4 py-3 rounded-xl border-2 transition-all duration-300 ${
-                    fieldErrors.email
+                    fieldErrors.email && touched.email
                       ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
-                      : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
+                      : formData.email && !fieldErrors.email && touched.email
+                        ? "border-green-500 bg-green-50 dark:bg-green-900/20 focus:ring-green-300 dark:focus:ring-green-600"
+                        : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
                   } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
                 />
               </div>
-              {/* Email Error Message */}
-              {fieldErrors.email && (
+              {/* Email hint */}
+              {formData.email && !fieldErrors.email && !touched.email && (
+                <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                  Enter a valid email address (e.g., name@domain.com)
+                </p>
+              )}
+              {/* Email error message */}
+              {fieldErrors.email && touched.email && (
                 <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
                   <span className="text-xs">⚠️</span>
                   {fieldErrors.email}
                 </p>
               )}
+              {/* Email success message */}
+              {formData.email && !fieldErrors.email && touched.email && (
+                <p className="mt-1.5 text-sm text-green-500 dark:text-green-400 flex items-center gap-1.5">
+                  <span className="text-xs">✓</span>
+                  Valid email address
+                </p>
+              )}
             </div>
 
+            {/* Password Field */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -280,12 +436,17 @@ const Login = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   required
                   placeholder="••••••••"
                   className={`w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-300 ${
-                    fieldErrors.password
+                    fieldErrors.password && touched.password
                       ? "border-red-500 bg-red-50 dark:bg-red-900/20 focus:ring-red-300 dark:focus:ring-red-600 focus:border-red-500"
-                      : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
+                      : formData.password &&
+                          !fieldErrors.password &&
+                          touched.password
+                        ? "border-green-500 bg-green-50 dark:bg-green-900/20 focus:ring-green-300 dark:focus:ring-green-600"
+                        : "border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-gray-400 dark:focus:border-gray-500"
                   } text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none`}
                 />
                 <button
@@ -300,13 +461,26 @@ const Login = () => {
                   )}
                 </button>
               </div>
-              {/* Password Error Message */}
-              {fieldErrors.password && (
+              {/* Password error message */}
+              {fieldErrors.password && touched.password && (
                 <p className="mt-1.5 text-sm text-red-500 dark:text-red-400 flex items-center gap-1.5">
                   <span className="text-xs">⚠️</span>
                   {fieldErrors.password}
                 </p>
               )}
+              {/* Password success message */}
+              {formData.password &&
+                !fieldErrors.password &&
+                touched.password && (
+                  <p className="mt-1.5 text-sm text-green-500 dark:text-green-400 flex items-center gap-1.5">
+                    <span className="text-xs">✓</span>
+                    Valid password
+                  </p>
+                )}
+              {/* Password hint */}
+              <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">
+                Minimum 6 characters required
+              </p>
             </div>
 
             <button

@@ -15,7 +15,7 @@ export const getMyAttendanceApi = () => API.get("/me");
 
 // Admin
 export const getAllAttendanceApi = (date) =>
-  API.get("/", {
+  API.get("", {
     params: date ? { date } : {},
   });
 

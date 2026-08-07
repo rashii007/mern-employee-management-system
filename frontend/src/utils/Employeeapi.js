@@ -159,12 +159,7 @@ export const updateDepartment = async (id, data) => {
 // ✅ Delete department (admin only)
 export const deleteDepartment = async (id) => {
   try {
-    const res = await axios.delete(
-      `http://localhost:5000/api/departments/delete/${id}`,
-      {
-        withCredentials: true,
-      },
-    );
+    const res = await departmentApi.delete(`/delete/${id}`);
     return res.data;
   } catch (error) {
     console.error("Delete Department Error:", error);
@@ -180,9 +175,9 @@ export const getDepartmentStats = async () => {
   } catch (error) {
     console.error("Get Department Stats Error:", error);
     throw error.response?.data || error.message;
-    };
-    return res.data;
-  } 
+  }
+  return res.data;
+};
 
 // ✅ Get department employees (admin only)
 export const getDepartmentEmployees = async (id) => {
@@ -194,7 +189,6 @@ export const getDepartmentEmployees = async (id) => {
     throw error.response?.data || error.message;
   }
 };
-
 
 // ============================================
 // EXPORT ALL

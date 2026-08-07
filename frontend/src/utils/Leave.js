@@ -29,7 +29,7 @@ export const deleteLeave = async (id) => {
 
 // Get All Leaves
 export const getAllLeaves = async () => {
-  const res = await api.get("/leave/");
+  const res = await api.get("/leave");
   return res.data;
 };
 

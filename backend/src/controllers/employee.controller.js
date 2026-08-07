@@ -8,6 +8,139 @@ const mongoose = require("mongoose");
 // @route  POST /api/employees (admin only)
 // @desc   Create employee (User + Employee profile)
 // ============================================
+// const createEmployee = async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       email,
+//       password,
+//       employeeId,
+//       department,
+//       position,
+//       phone,
+//       salary,
+//       joiningDate,
+//     } = req.body;
+
+//     console.log("📥 Received Data:", req.body); // ✅ Debug log
+
+//     // ✅ Validate required fields
+//     if (
+//       !name ||
+//       !email ||
+//       !password ||
+//       !employeeId ||
+//       !department ||
+//       !position ||
+//       salary === undefined
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Missing required fields",
+//         required: [
+//           "name",
+//           "email",
+//           "password",
+//           "employeeId",
+//           "department",
+//           "position",
+//           "salary",
+//         ],
+//         received: req.body,
+//       });
+//     }
+
+//     // ✅ Check if email already exists
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       return res.status(409).json({
+//         success: false,
+//         message: "Email already registered",
+//       });
+//     }
+
+//     // ✅ Check if employee ID already exists
+//     const existingEmployeeId = await Employee.findOne({ employeeId });
+//     if (existingEmployeeId) {
+//       return res.status(409).json({
+//         success: false,
+//         message: "Employee ID already exists",
+//       });
+//     }
+
+//     // ✅ FIX: Find department by name and get ObjectId
+//     let departmentId = department;
+//     console.log("Department ID:", req.body.department);
+//     console.log("Department:", department);
+
+//     // Agar ObjectId bheja gaya hai
+//     if (mongoose.Types.ObjectId.isValid(department)) {
+//       const dept = await Department.findById(department);
+
+//       if (!dept) {
+//         return res.status(404).json({
+//           success: false,
+//           message: "Department not found",
+//         });
+//       }
+
+//       departmentId = dept._id;
+//     }
+//     // Agar department ka name bheja gaya hai
+//     else {
+//       const dept = await Department.findOne({ name: department });
+
+//       if (!dept) {
+//         return res.status(404).json({
+//           success: false,
+//           message: `Department "${department}" not found.`,
+//         });
+//       }
+
+//       departmentId = dept._id;
+//     }
+
+//     // ✅ Create User
+//     const user = await User.create({
+//       name,
+//       email,
+//       password,
+//       role: "employee",
+//     });
+
+//     // ✅ Create Employee profile with ObjectId
+//     const employee = await Employee.create({
+//       user: user._id,
+//       employeeId,
+//       department: departmentId, // ✅ Now it's ObjectId
+//       position,
+//       phone: phone || "",
+//       salary: Number(salary),
+//       joiningDate: joiningDate || new Date(),
+//       status: "active",
+//     });
+//     console.log("Department:", department);
+
+//     // ✅ Populate department name
+//     const populatedEmployee = await Employee.findById(employee._id)
+//       .populate("user", "name email role")
+//       .populate("department", "name description");
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Employee created successfully",
+//       data: populatedEmployee,
+//     });
+//   } catch (error) {
+//     console.error("❌ Create Employee Error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to create employee",
+//       error: error.message,
+//     });
+//   }
+// };
+
 const createEmployee = async (req, res) => {
   try {
     const {
@@ -22,13 +155,12 @@ const createEmployee = async (req, res) => {
       joiningDate,
     } = req.body;
 
-    console.log("📥 Received Data:", req.body); // ✅ Debug log
+    console.log("📥 Received Data:", req.body);
 
     // ✅ Validate required fields
     if (
       !name ||
       !email ||
-      !password ||
       !employeeId ||
       !department ||
       !position ||
@@ -37,30 +169,12 @@ const createEmployee = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
-        required: [
-          "name",
-          "email",
-          "password",
-          "employeeId",
-          "department",
-          "position",
-          "salary",
-        ],
-        received: req.body,
       });
     }
 
-    // ✅ Check if email already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: "Email already registered",
-      });
-    }
-
-    // ✅ Check if employee ID already exists
+    // ✅ Check Employee ID
     const existingEmployeeId = await Employee.findOne({ employeeId });
+
     if (existingEmployeeId) {
       return res.status(409).json({
         success: false,
@@ -68,12 +182,12 @@ const createEmployee = async (req, res) => {
       });
     }
 
-    // ✅ FIX: Find department by name and get ObjectId
-    let departmentId = department;
-    console.log("Department ID:", req.body.department);
-    console.log("Department:", department);
+    // ==========================
+    // Department Validation
+    // ==========================
 
-    // Agar ObjectId bheja gaya hai
+    let departmentId = department;
+
     if (mongoose.Types.ObjectId.isValid(department)) {
       const dept = await Department.findById(department);
 
@@ -85,9 +199,7 @@ const createEmployee = async (req, res) => {
       }
 
       departmentId = dept._id;
-    }
-    // Agar department ka name bheja gaya hai
-    else {
+    } else {
       const dept = await Department.findOne({ name: department });
 
       if (!dept) {
@@ -100,40 +212,69 @@ const createEmployee = async (req, res) => {
       departmentId = dept._id;
     }
 
-    // ✅ Create User
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role: "employee",
-    });
+    // ==========================
+    // Check User
+    // ==========================
 
-    // ✅ Create Employee profile with ObjectId
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // Check if already employee
+      const existingEmployee = await Employee.findOne({
+        user: user._id,
+      });
+
+      if (existingEmployee) {
+        return res.status(409).json({
+          success: false,
+          message: "This user is already an employee.",
+        });
+      }
+
+      // Update role if not admin
+      if (user.role !== "admin") {
+        user.role = "employee";
+        await user.save();
+      }
+    } else {
+      // Create new user
+      user = await User.create({
+        name,
+        email,
+        password,
+        role: "employee",
+      });
+    }
+
+    // ==========================
+    // Create Employee
+    // ==========================
+
     const employee = await Employee.create({
       user: user._id,
       employeeId,
-      department: departmentId, // ✅ Now it's ObjectId
+      department: departmentId,
       position,
       phone: phone || "",
       salary: Number(salary),
       joiningDate: joiningDate || new Date(),
       status: "active",
     });
-    console.log("Department:", department);
 
-    // ✅ Populate department name
+    // Populate
     const populatedEmployee = await Employee.findById(employee._id)
       .populate("user", "name email role")
       .populate("department", "name description");
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Employee created successfully",
       data: populatedEmployee,
     });
   } catch (error) {
     console.error("❌ Create Employee Error:", error);
-    res.status(500).json({
+
+    return res.status(500).json({
       success: false,
       message: "Failed to create employee",
       error: error.message,

@@ -12,21 +12,23 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://mern-employee-management-system-zeta.vercel.app",
-  "https://mern-employee-management-system-7ks0s5o6n.vercel.app"
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+    origin(origin, callback) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app")
+      ) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
-  }),
+  })
 );
 
 app.use(express.json());

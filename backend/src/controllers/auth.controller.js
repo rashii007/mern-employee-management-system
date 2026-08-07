@@ -5,8 +5,8 @@ const generateToken = require("../utils/generateToken");
 // Use SameSite=None for cross-origin frontend requests and Secure for modern browsers.
 const cookieOptions = {
   httpOnly: true,
-  sameSite: "lax",
-  secure: false,
+  sameSite: "none",
+  secure: true,
 };
 
 // @route  POST /api/auth/register
